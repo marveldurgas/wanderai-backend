@@ -8,7 +8,7 @@ django-filter==23.3
 django-redis==5.4.0
 
 # Database
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 
 # AI and API integrations
 openai==1.12.0

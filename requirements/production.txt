@@ -29,4 +29,4 @@ olamaps==0.5.2
 # Production-specific dependencies
 whitenoise==6.5.0
 dj-database-url==2.1.0
-psycopg2-binary==2.9.9 
+psycopg2-binary==2.9.10 
