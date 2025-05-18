@@ -17,18 +17,58 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+from django.db import connections
+from django.db.utils import OperationalError
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from users.views import UserViewSet
-from travels.views import TravelPreferenceViewSet, JourneyViewSet
+from travels.views import TravelPreferenceViewSet, JourneyViewSet, TripReviewViewSet
+from ai_services.views import ai_services_health_check
+from ai_services.models import HealthCheckLog
 
 # Setup the API router
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'travel-preferences', TravelPreferenceViewSet, basename='travel-preference')
 router.register(r'journeys', JourneyViewSet, basename='journey')
+router.register(r'trip-reviews', TripReviewViewSet, basename='trip-review')
+
+# Custom health check view
+def health_check(request):
+    health_data = {
+        'status': 'healthy',
+        'services': {
+            'database': 'up',
+            'api': 'up',
+        },
+        'version': '1.0.0',
+    }
+    
+    # Check database connection
+    db_error = None
+    try:
+        connections['default'].cursor()
+    except OperationalError as e:
+        health_data['status'] = 'unhealthy'
+        health_data['services']['database'] = 'down'
+        db_error = str(e)
+    
+    # Log the health check results
+    try:
+        HealthCheckLog.objects.create(
+            status=health_data['status'],
+            database_status=health_data['services']['database'],
+            error_details={} if not db_error else {'database': db_error}
+        )
+    except Exception as e:
+        # Don't let logging failure affect the health check response
+        health_data['logging_error'] = str(e)
+    
+    status_code = 200 if health_data['status'] == 'healthy' else 500
+    return JsonResponse(health_data, status=status_code)
 
 # API v1 endpoint patterns
 api_v1_patterns = [
@@ -56,6 +96,7 @@ urlpatterns = [
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
-    # Health checks (for Fly.io and other monitoring)
-    path('health/', include('health_check.urls')),
+    # Health checks
+    path('health/', health_check, name='health_check'),
+    path('health/ai/', ai_services_health_check, name='ai_health_check'),
 ]

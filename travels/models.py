@@ -52,3 +52,29 @@ class TransportationDetail(models.Model):
     
     def __str__(self):
         return f"Transportation for {self.journey.title}"
+
+class TripReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 - Poor'),
+        (2, '2 - Below Average'),
+        (3, '3 - Average'),
+        (4, '4 - Good'),
+        (5, '5 - Excellent'),
+    ]
+    
+    journey = models.ForeignKey(Journey, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trip_reviews')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    comment = models.TextField()
+    accommodation_rating = models.IntegerField(choices=RATING_CHOICES, null=True, blank=True)
+    transportation_rating = models.IntegerField(choices=RATING_CHOICES, null=True, blank=True)
+    food_rating = models.IntegerField(choices=RATING_CHOICES, null=True, blank=True)
+    attractions_rating = models.IntegerField(choices=RATING_CHOICES, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Review for {self.journey.title} by {self.user.username}"
+    
+    class Meta:
+        unique_together = ('journey', 'user')  # One review per journey-user pair

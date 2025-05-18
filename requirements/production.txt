@@ -21,7 +21,6 @@ django-permissions-policy==4.17.0  # Security headers
 django-csp==3.7  # Content Security Policy
 
 # Health checks
-django-health-check==3.17.0  # For container orchestration health endpoints
 
 # Ola Maps
 olamaps==0.5.2

@@ -47,10 +47,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "drf_spectacular",
-    "health_check",
-    "health_check.db",
-    "health_check.cache",
-    "health_check.storage",
     
     # Local apps
     "users",

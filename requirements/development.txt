@@ -19,9 +19,9 @@ black==24.2.0
 isort==5.13.2
 flake8==7.0.0
 mypy==1.8.0
+django-health-check==3.17.0
+
 
 # Documentation
 sphinx==7.3.1
-sphinx-rtd-theme==2.0.0 
-
-health_check==3.4.1
+sphinx-rtd-theme==2.0.0

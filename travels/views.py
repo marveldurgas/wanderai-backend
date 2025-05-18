@@ -1,9 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import TravelPreference, Journey, TransportationDetail
-from .serializers import TravelPreferenceSerializer, JourneySerializer, TransportationDetailSerializer
+from .models import TravelPreference, Journey, TransportationDetail, TripReview
+from .serializers import TravelPreferenceSerializer, JourneySerializer, TransportationDetailSerializer, TripReviewSerializer
 from ai_services.travel_ai import TravelAIService
 from ai_services.ola_api import OlaMapService
 
@@ -21,66 +21,56 @@ class TravelPreferenceViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def generate_ai_journey(self, request, pk=None):
-        travel_preference = self.get_object()
-        travel_ai = TravelAIService()
-        ola_service = OlaMapService()
+        """Generate AI journey from travel preference"""
+        preference = self.get_object()
         
-        # Generate AI suggestion
-        suggestion = travel_ai.generate_travel_suggestion(travel_preference)
-        if not suggestion:
+        travel_ai = TravelAIService()
+        ai_suggestion = travel_ai.generate_travel_suggestion(preference)
+        
+        if not ai_suggestion:
             return Response(
                 {"error": "Failed to generate travel suggestion"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
             
-        # Create a new journey from the suggestion
-        journey = Journey.objects.create(
-            user=request.user,
-            title=f"Trip to {travel_preference.destination}",
-            description=suggestion,
-            destination=travel_preference.destination,
-            start_date=request.data.get('start_date'),
-            end_date=request.data.get('end_date'),
-            budget=request.data.get('budget', 0),
-            ai_generated=True
-        )
-        
-        # Add transportation details if coordinates are provided
-        pickup_lat = request.data.get('pickup_lat')
-        pickup_lng = request.data.get('pickup_lng')
-        drop_lat = request.data.get('drop_lat')
-        drop_lng = request.data.get('drop_lng')
-        
-        if all([pickup_lat, pickup_lng, drop_lat, drop_lng]):
-            ride_data = ola_service.find_lowest_cost_ride(
-                pickup_lat, pickup_lng, drop_lat, drop_lng
-            )
+        # Parse dates from request or use defaults
+        try:
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
+            budget = float(request.data.get('budget', 1000))
             
-            if ride_data:
-                TransportationDetail.objects.create(
-                    journey=journey,
-                    pickup_location=request.data.get('pickup_location', 'Unknown'),
-                    drop_location=request.data.get('drop_location', 'Unknown'),
-                    pickup_lat=pickup_lat,
-                    pickup_lng=pickup_lng,
-                    drop_lat=drop_lat,
-                    drop_lng=drop_lng,
-                    vehicle_type=ride_data.get('display_name', 'Auto'),
-                    estimated_cost=ride_data.get('fare_breakdown', {}).get('estimated_fare', 0)
-                )
-        
-        return Response(JourneySerializer(journey).data)
+            # Create a new journey with AI suggestion
+            journey_data = {
+                'user': request.user,
+                'title': f"Trip to {preference.destination}",
+                'description': ai_suggestion,
+                'destination': preference.destination,
+                'start_date': start_date,
+                'end_date': end_date,
+                'budget': budget,
+                'ai_generated': True
+            }
+            
+            journey = Journey.objects.create(**journey_data)
+            return Response(JourneySerializer(journey).data, status=status.HTTP_201_CREATED)
+            
+        except (ValueError, KeyError) as e:
+            return Response(
+                {"error": f"Invalid request data: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class JourneyViewSet(viewsets.ModelViewSet):
     serializer_class = JourneySerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        status_filter = self.request.query_params.get('status', None)
         queryset = Journey.objects.filter(user=self.request.user)
         
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
+        # Filter by status if provided
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
             
         return queryset
     
@@ -89,28 +79,114 @@ class JourneyViewSet(viewsets.ModelViewSet):
         
     @action(detail=True, methods=['post'])
     def add_transportation(self, request, pk=None):
+        """Add transportation details to journey"""
         journey = self.get_object()
-        ola_service = OlaMapService()
         
-        pickup_lat = request.data.get('pickup_lat')
-        pickup_lng = request.data.get('pickup_lng')
-        drop_lat = request.data.get('drop_lat')
-        drop_lng = request.data.get('drop_lng')
-        
-        if not all([pickup_lat, pickup_lng, drop_lat, drop_lng]):
+        try:
+            serializer = TransportationDetailSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(journey=journey)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
             return Response(
-                {"error": "Missing location coordinates"}, 
+                {"error": f"Failed to add transportation: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def optimize_transportation(self, request, pk=None):
+        """Optimize transportation for the journey"""
+        journey = self.get_object()
+        transportation = journey.transportation.all()
+        
+        if not transportation:
+            return Response(
+                {"error": "No transportation details found for this journey"},
                 status=status.HTTP_400_BAD_REQUEST
             )
             
-        ride_options = ola_service.get_ride_options(
-            pickup_lat, pickup_lng, drop_lat, drop_lng
-        )
+        ola_service = OlaMapService()
         
-        if not ride_options:
+        try:
+            # Get ride options for all transportation segments
+            optimization_data = []
+            
+            for transport in transportation:
+                ride_options = ola_service.get_ride_options(
+                    transport.pickup_lat, 
+                    transport.pickup_lng,
+                    transport.drop_lat,
+                    transport.drop_lng
+                )
+                
+                if ride_options:
+                    optimization_data.append({
+                        "segment": f"From {transport.pickup_location} to {transport.drop_location}",
+                        "current_vehicle": transport.vehicle_type,
+                        "current_cost": float(transport.estimated_cost),
+                        "options": ride_options
+                    })
+            
+            # If we have data to optimize, pass to AI service
+            if optimization_data:
+                travel_ai = TravelAIService()
+                optimized_plan = travel_ai.optimize_travel_budget(
+                    journey.description,
+                    optimization_data
+                )
+                
+                return Response({
+                    "journey": JourneySerializer(journey).data,
+                    "optimization_data": optimization_data,
+                    "optimized_plan": optimized_plan
+                })
+            else:
+                return Response({"error": "No ride options found"}, status=status.HTTP_404_NOT_FOUND)
+                
+        except Exception as e:
             return Response(
-                {"error": "No ride options available"}, 
-                status=status.HTTP_404_NOT_FOUND
+                {"error": f"Optimization failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class TripReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = TripReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        # For GET requests, users can see all reviews
+        if self.request.method in permissions.SAFE_METHODS:
+            # Filter by journey if journey_id is provided
+            journey_id = self.request.query_params.get('journey_id')
+            if journey_id:
+                return TripReview.objects.filter(journey_id=journey_id)
+            return TripReview.objects.all()
+        
+        # For other methods, users can only access their own reviews
+        return TripReview.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def my_reviews(self, request):
+        """Get all reviews by the current user"""
+        reviews = TripReview.objects.filter(user=request.user)
+        serializer = self.get_serializer(reviews, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def journey_reviews(self, request):
+        """Get all reviews for a specific journey"""
+        journey_id = request.query_params.get('journey_id')
+        if not journey_id:
+            return Response(
+                {"error": "journey_id parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
             
-        return Response({"ride_options": ride_options})
+        journey = get_object_or_404(Journey, id=journey_id)
+        reviews = TripReview.objects.filter(journey=journey)
+        serializer = self.get_serializer(reviews, many=True)
+        return Response(serializer.data)

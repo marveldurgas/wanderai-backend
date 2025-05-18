@@ -32,3 +32,4 @@ uritemplate==4.1.1
 # Authentication & Security
 PyJWT==2.10.1
 cryptography==41.0.3 
+django-health-check==3.17.0  # For container orchestration health endpoints
