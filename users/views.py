@@ -16,7 +16,8 @@ from .serializers import (
     UserUIPreferencesSerializer,
     UserDataExportSerializer,
     TravelPreferenceSerializer,
-    SupabaseAuthSerializer
+    SupabaseAuthSerializer,
+    PasswordChangeSerializer,
 )
 
 # Create your views here.
@@ -46,6 +47,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return TravelPreferenceSerializer
         if self.action == 'supabase_auth':
             return SupabaseAuthSerializer
+        if self.action == 'change_password':
+            return PasswordChangeSerializer
         return UserSerializer
     
     @action(detail=False, methods=['post'])
@@ -199,6 +202,55 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         
         return Response(export_data)
+    
+    @action(detail=False, methods=['post'])
+    def change_password(self, request):
+        """Change user password"""
+        user = request.user
+        serializer = PasswordChangeSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # Check current password
+            if not user.check_password(serializer.validated_data.get('current_password')):
+                return Response(
+                    {'current_password': ['Wrong password.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if new passwords match
+            if serializer.validated_data.get('new_password') != serializer.validated_data.get('confirm_password'):
+                return Response(
+                    {'confirm_password': ['Passwords do not match.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Set new password
+            user.set_password(serializer.validated_data.get('new_password'))
+            user.save()
+            return Response({'status': 'Password changed successfully'})
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['delete'])
+    def delete_account(self, request):
+        """Delete user account"""
+        user = request.user
+        
+        # Optional: Require password confirmation for extra security
+        password = request.data.get('password')
+        if not user.check_password(password):
+            return Response(
+                {'password': ['Wrong password. Account deletion aborted.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Delete user account
+        username = user.username
+        user.delete()
+        
+        return Response({
+            'status': f'User {username} deleted successfully',
+        }, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['post'])
     def supabase_auth(self, request):

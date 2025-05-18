@@ -67,4 +67,24 @@ class SupabaseAuthSerializer(serializers.Serializer):
     username = serializers.CharField(required=False)
     profile_picture = serializers.URLField(required=False)
     first_name = serializers.CharField(required=False)
-    last_name = serializers.CharField(required=False) 
+    last_name = serializers.CharField(required=False)
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_password = serializers.CharField(required=True, min_length=8)
+    
+    def validate_new_password(self, value):
+        # Add custom password validation if needed
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        
+        # Check for at least one digit
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        
+        # Check for at least one uppercase letter
+        if not any(char.isupper() for char in value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        
+        return value 
