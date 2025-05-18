@@ -30,15 +30,26 @@ router.register(r'users', UserViewSet, basename='user')
 router.register(r'travel-preferences', TravelPreferenceViewSet, basename='travel-preference')
 router.register(r'journeys', JourneyViewSet, basename='journey')
 
+# API v1 endpoint patterns
+api_v1_patterns = [
+    # JWT authentication
+    path('users/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('users/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # Include router URLs
+    path('', include(router.urls)),
+]
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     
-    # API endpoints
-    path('api/', include(router.urls)),
+    # API endpoints - version 1
+    path('api/v1/', include(api_v1_patterns)),
     
-    # JWT authentication
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # Legacy API endpoints (for backward compatibility)
+    path('api/', include(router.urls)),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair_legacy'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh_legacy'),
     
     # API documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
