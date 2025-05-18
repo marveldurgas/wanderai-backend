@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from django.core.management.utils import get_random_secret_key
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -102,17 +103,24 @@ if DEBUG:
         }
     }
 else:
-    # Configure Supabase PostgreSQL in production
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'HOST': os.environ.get('SUPABASE_HOST', ''),
-            'NAME': 'postgres',
-            'USER': 'postgres',
-            'PORT': '5432',
-            'PASSWORD': os.environ.get('SUPABASE_PASSWORD', ''),
+    # Check for Render PostgreSQL database URL or use Supabase credentials
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL:
+        DATABASES = {
+            'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
         }
-    }
+    else:
+        # Use Supabase PostgreSQL configuration as fallback
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'HOST': os.environ.get('SUPABASE_HOST', ''),
+                'NAME': 'postgres',
+                'USER': 'postgres',
+                'PORT': '5432',
+                'PASSWORD': os.environ.get('SUPABASE_PASSWORD', ''),
+            }
+        }
 
 
 # Password validation

@@ -1,0 +1,1 @@
+web: cd wanderlustai_backend && gunicorn wanderlustai_backend.wsgi:application --log-file - 

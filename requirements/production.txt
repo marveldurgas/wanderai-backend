@@ -24,4 +24,9 @@ django-csp==3.7  # Content Security Policy
 django-health-check==3.17.0  # For container orchestration health endpoints
 
 # Ola Maps
-olamaps==0.5.2 
+olamaps==0.5.2
+
+# Production-specific dependencies
+whitenoise==6.5.0
+dj-database-url==2.1.0
+psycopg2-binary==2.9.9 
