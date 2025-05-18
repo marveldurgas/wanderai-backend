@@ -1,0 +1,27 @@
+# Include base requirements
+-r base.txt
+
+# WSGI server
+gunicorn==21.2.0
+uvicorn[standard]==0.29.0  # ASGI server for improved performance
+
+# Monitoring & Performance
+sentry-sdk==1.39.1
+django-prometheus==2.3.1
+scout-apm==2.26.1  # Application performance monitoring
+django-cacheops==7.0.2  # Automatic caching
+
+# Caching & Optimization
+redis==5.0.1
+hiredis==2.2.3
+django-storages==1.14.2  # For cloud storage (S3, etc.)
+
+# Security
+django-permissions-policy==4.17.0  # Security headers
+django-csp==3.7  # Content Security Policy
+
+# Health checks
+django-health-check==3.17.0  # For container orchestration health endpoints
+
+# Ola Maps
+olamaps==0.5.2 

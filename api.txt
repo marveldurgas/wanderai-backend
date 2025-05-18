@@ -1,0 +1,70 @@
+
+
+Read file: wanderai-backend/users/urls.py
+
+Read file: wanderai-backend/maps/urls.py
+
+Read file: wanderai-backend/ai/urls.py
+
+Read file: wanderai-backend/travels/urls.py
+
+Read file: wanderai-backend/api/router.py
+Based on examining all the urls.py files in your WanderAI backend, here's a comprehensive count of your APIs:
+
+### Main API Endpoints (42 total endpoints)
+
+**Users Module (11 endpoints)**:
+- `/api/v1/users/token/` - JWT token generation
+- `/api/v1/users/token/refresh/` - JWT token refresh
+- `/api/v1/users/register/` - User registration
+- `/api/v1/users/profile/` - User profile management
+- `/api/v1/users/me/` - Current user info
+- `/api/v1/users/data/` - User data export
+- `/api/v1/users/travel-preferences/` - Travel preferences management
+- `/api/v1/users/travel-stats/` - User travel statistics
+- `/api/v1/users/travel-stats/update/` - Update travel stats
+- `/api/v1/users/preferences/` - UI preferences
+- `/api/v1/users/supabase-auth/` - Supabase authentication
+
+**Maps Module (4 endpoints)**:
+- `/api/v1/maps/directions/` - Directions service
+- `/api/v1/maps/places/` - Place search
+- `/api/v1/maps/costs/` - Travel cost estimates
+- `/api/v1/maps/geocode/` - Geocoding service
+
+**AI Module (8 endpoints)**:
+- `/api/v1/ai/models/` - Available AI models
+- `/api/v1/ai/travel-plan/` - Generate travel plans
+- `/api/v1/ai/save-travel-plan/` - Save generated plans
+- `/api/v1/ai/budget-options/` - Budget optimization
+- `/api/v1/ai/recommendations/` - Destination recommendations
+- `/api/v1/ai/top-recommendations/` - Top recommendations
+- `/api/v1/ai/preferences/` - AI travel preferences
+- `/api/v1/ai/journey-analysis/<journey_id>/` - Journey analysis
+
+**Travels Module (via DRF Router - 12 endpoints)**:
+- `/api/v1/journeys/` - List/create journeys (GET, POST)
+- `/api/v1/journeys/<id>/` - Retrieve/update/delete journey (GET, PUT, PATCH, DELETE)
+- `/api/v1/calendar/` - List/create calendar events (GET, POST)
+- `/api/v1/calendar/<id>/` - Retrieve/update/delete calendar event (GET, PUT, PATCH, DELETE)
+- `/api/v1/reviews/` - List/create reviews (GET, POST)
+- `/api/v1/reviews/<id>/` - Retrieve/update/delete review (GET, PUT, PATCH, DELETE)
+
+**API Router ViewSets (Additional 7 endpoints)**:
+- `/api/v1/users/` - User management (GET, POST)
+- `/api/v1/users/<id>/` - User detail (GET, PUT, PATCH, DELETE)
+- `/api/v1/ai/models/` - AI model management
+- `/api/v1/ai/preferences/` - Travel preference management
+- `/api/v1/ai/recommendations/` - Destination recommendation management
+- `/api/v1/maps/places/` - Maps place management
+
+**System/Documentation Endpoints (7 endpoints)**:
+- `/api/` - API version information
+- `/api/v1/health/` - Health check
+- `/api/v1/auth/token/` - Authentication token
+- `/api/v1/auth/token/refresh/` - Token refresh
+- `/api/v1/schema/` - API schema
+- `/api/v1/docs/` - Swagger UI
+- `/api/v1/redoc/` - ReDoc UI
+
+Your backend provides a comprehensive set of 42 API endpoints covering user management, travel planning, AI-powered recommendations, mapping services, and system functionality.

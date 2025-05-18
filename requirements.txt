@@ -1,0 +1,50 @@
+# Django and Django REST Framework
+Django==4.2.7
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.0
+django-cors-headers==4.3.0
+drf-spectacular==0.26.5
+django-filter==23.3
+django-redis==5.4.0
+
+# Database
+psycopg2-binary==2.9.9
+
+# AI and API integrations
+openai==1.12.0
+requests==2.31.0
+
+# Deployment
+gunicorn==21.2.0
+whitenoise==6.5.0
+
+# Development and Testing
+pytest==8.3.0
+pytest-django==4.7.0
+pytest-cov==4.1.0
+flake8==7.0.0
+black==24.2.0
+
+# Environment variables
+python-dotenv==1.0.0
+environs==14.1.1
+
+# Authentication
+PyJWT==2.10.1
+
+# Supabase
+supabase==2.15.1
+storage3==0.11.3
+postgrest==1.0.1
+gotrue==2.12.0
+realtime==2.4.3
+supafunc==0.9.4
+
+# Maps
+olamaps==0.5.2  # If available, or a suitable mapping library
+
+# Utils
+Pillow==11.2.1
+python-magic==0.4.27
+celery==5.3.4
+redis==5.0.1 
