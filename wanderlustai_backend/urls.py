@@ -26,7 +26,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 from users.views import UserViewSet
 from travels.views import TravelPreferenceViewSet, JourneyViewSet, TripReviewViewSet
-from ai_services.views import ai_services_health_check, TravelAIServiceView
+from ai_services.views import ai_services_health_check, generate_travel_plan
 from ai_services.models import HealthCheckLog
 
 # Setup the API router
@@ -76,11 +76,11 @@ api_v1_patterns = [
     path('users/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('users/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
+    # AI Services endpoints
+    path('ai_services/generate_travel_plan/', generate_travel_plan, name='generate_travel_plan'),
+    
     # Include router URLs
     path('', include(router.urls)),
-    
-    # AI Service endpoints
-    path('ai_services/generate_travel_plan/', TravelAIServiceView.as_view({'post': 'generate_travel_plan'}), name='generate_travel_plan'),
 ]
 
 urlpatterns = [
