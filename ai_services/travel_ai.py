@@ -14,16 +14,35 @@ class TravelAIService:
         self.openai_client = openai.OpenAI(api_key=api_key)
     
     def generate_travel_suggestion(self, travel_preference):
-        """Generate AI travel suggestion based on user preferences"""
+        """Generate AI travel itinerary based on user preferences
+        
+        travel_preference can be either a TravelPreference object or a dictionary with preference data
+        """
+        # Handle both dictionary and object inputs
+        if isinstance(travel_preference, dict):
+            destination = travel_preference.get('destination', '')
+            duration = travel_preference.get('duration', '')
+            budget = travel_preference.get('budget', '')
+            interests = travel_preference.get('interests', '')
+            companion = travel_preference.get('companions', '')
+            special_requirements = travel_preference.get('special_requirements', 'None')
+        else:
+            destination = travel_preference.destination
+            duration = travel_preference.duration
+            budget = travel_preference.budget
+            interests = travel_preference.interests
+            companion = travel_preference.companion
+            special_requirements = travel_preference.special_requirements or 'None'
+        
         prompt = f"""
         Generate a personalized travel itinerary based on the following preferences:
         
-        Destination: {travel_preference.destination}
-        Duration: {travel_preference.duration}
-        Style/Budget: {travel_preference.budget}
-        Interests and Priorities: {travel_preference.interests}
-        Companion: {travel_preference.companion}
-        Special Requirements: {travel_preference.special_requirements or 'None'}
+        Destination: {destination}
+        Duration: {duration}
+        Style/Budget: {budget}
+        Interests and Priorities: {interests}
+        Companion: {companion}
+        Special Requirements: {special_requirements}
         
         Provide a detailed day-by-day itinerary with suggested activities, places to visit,
         accommodation options, and estimated costs.
@@ -38,10 +57,18 @@ class TravelAIService:
                 ],
                 max_tokens=1500
             )
-            return response.choices[0].message.content
+            itinerary = response.choices[0].message.content
+            
+            # Return structured response for frontend
+            return {
+                "itinerary": itinerary,
+                "destination": destination,
+                "duration": duration,
+                "budget": budget
+            }
         except Exception as e:
             print(f"Error generating travel suggestion: {str(e)}")
-            return None
+            raise e
     
     def optimize_travel_budget(self, itinerary, ola_rides_data):
         """Optimize travel budget by finding cost-effective transportation options"""
@@ -70,4 +97,4 @@ class TravelAIService:
             return response.choices[0].message.content
         except Exception as e:
             print(f"Error optimizing travel budget: {str(e)}")
-            return None 
+            raise e 

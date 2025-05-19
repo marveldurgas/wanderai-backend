@@ -8,22 +8,50 @@ from .ola_api import OlaMapService
 
 # Create your views here.
 
-class AIServiceView:
+class TravelAIServiceView(viewsets.ViewSet):
     """
-    Non-model based view for AI services
+    ViewSet for AI travel services
     """
+    permission_classes = [permissions.IsAuthenticated]
     
-    @staticmethod
-    def generate_travel_plan(travel_preference, user):
+    @action(detail=False, methods=['post'])
+    def generate_travel_plan(self, request):
         """Generate a travel plan based on preferences"""
-        travel_ai = TravelAIService()
-        return travel_ai.generate_travel_suggestion(travel_preference)
+        try:
+            travel_ai = TravelAIService()
+            travel_plan = travel_ai.generate_travel_suggestion(request.data)
+            return Response(travel_plan, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to generate travel plan: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
-    @staticmethod
-    def get_transportation_options(pickup_lat, pickup_lng, drop_lat, drop_lng):
+    @action(detail=False, methods=['post'])
+    def get_transportation_options(self, request):
         """Get transportation options from Ola Maps API"""
-        ola_service = OlaMapService()
-        return ola_service.get_ride_options(pickup_lat, pickup_lng, drop_lat, drop_lng)
+        try:
+            pickup_lat = float(request.data.get('pickup_lat'))
+            pickup_lng = float(request.data.get('pickup_lng'))
+            drop_lat = float(request.data.get('drop_lat'))
+            drop_lng = float(request.data.get('drop_lng'))
+            
+            ola_service = OlaMapService()
+            options = ola_service.get_ride_options(
+                pickup_lat, pickup_lng, drop_lat, drop_lng
+            )
+            
+            return Response(options, status=status.HTTP_200_OK)
+        except (ValueError, KeyError) as e:
+            return Response(
+                {"error": f"Invalid coordinates: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to get transportation options: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 @api_view(['GET'])
 def ai_services_health_check(request):
